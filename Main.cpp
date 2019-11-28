@@ -59,11 +59,9 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
 
   // A COMPLETER
   Solver s;
-  int time_bound = 20;
+  int time_bound = 15;
   int vehicles_number = vehicles.size();
   int action = 4;
-  // horizontal 0 is left, 1 is right
-  // vertical   0 is bot, 1 is top 
   int Vehicles[n][n][time_bound][vehicles_number];
   int Moves[n][n][time_bound][action];
 
@@ -93,7 +91,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
   for (int v = 0 ; v < vehicles_number ; v++) {
-    startBoard[n-1-vehicles[v].y][vehicles[v].x] = v;
+    startBoard[vehicles[v].y][vehicles[v].x] = v;
   }
 
   for (int i = 0 ; i < n ; i++) {
@@ -143,127 +141,136 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
   }
 
-  // At most one vehicle type on the board
-  // Vijtv -> (-Vi_j_v) && ...
+  //Illegal positions
   for (int t = 0 ; t < time_bound ; t++) {
-    for (int i = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          for (int i_ = 0 ; i_ < n ; i_++) {
-            for (int j_ = 0 ; j_ < n ; j_++) {
-              if (i_ != i && j_ != j) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i_][j_][t][v]));
-          	  }
-          	}
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Horizontal) {
+        for (int i = 0 ; i < n ; i++) {
+          s.addUnit(~Lit(Vehicles[i][n-1][t][v]));
+          if (vehicles[v].width > 2) {
+            s.addUnit(~Lit(Vehicles[i][n-2][t][v]));
+          }
+        }
+      }
+      else {
+        for (int j = 0 ; j < n ; j++) {
+          s.addUnit(~Lit(Vehicles[n-1][j][t][v]));
+          if (vehicles[v].height > 2) {
+            s.addUnit(~Lit(Vehicles[n-2][j][t][v]));
           }
         }
       }
     }
   }
+
   // Vérifier no collision
-
   for (int t = 0 ; t < time_bound ; t++) {
-    for (int i = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
-        for (int v = 0 ; v < vehicles_number ; v++) {
-
-          if (vehicles[v].orientation == Horizontal) {
-            if (j + vehicles[v].width <= n) {
-              for (int v_ = 0 ; v < vehicles_number ; v++) {
-                if (v != v_) { // pas deux voitures sur la même case
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j][t][v_]));
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+            s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j][t][v_]));
+            if (vehicles[v].orientation == Horizontal) {
+              if (j+1 < n) {
+                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+1][t][v_]));
+                if (j+2 < n && vehicles[v].width > 2) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+2][t][v_]));
                 }
-
-                if (vehicles[v_].orientation == Horizontal) {
-                  for (int d = 1 ; d < vehicles[v_].width && j-d >= 0 ; d++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-d][t][v_]));
+              }
+              if (vehicles[v_].orientation == Horizontal) {
+                if (j-1 >= 0) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-1][t][v_]));
+                  if (j-2 >= 0 && vehicles[v_].width > 2) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-2][t][v_]));
                   }
                 }
+              }
+              else { // V_ vertical
+                if (i-1 >= 0) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j][t][v_]));
+                  if (j+1 < n) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j+1][t][v_]));
+                    if (j+2 < n && vehicles[v].width > 2) {
+                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j+2][t][v_]));
+                    }
+                  }
+                  if (i-2 >= 0 && vehicles[v_].height > 2) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j][t][v_]));
+                    if (j+1 < n) {
+                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j+1][t][v_]));
+                      if (j+2 < n && vehicles[v].width > 2) {
+                        s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j+2][t][v_]));
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            else { // V vertical
+              if (i+1 < n) {
+                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+1][j][t][v_]));
+                if (i+2 < n && vehicles[v].height > 2) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+2][j][t][v_]));
+                }
+              }
 
-                else {
-                  for (int d = 0 ; d < vehicles[v_].height && i-d >= 0 ; d++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-d][j][t][v_]));
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-d][j+1][t][v_]));
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-d][j+2][t][v_]));
+              if (vehicles[v_].orientation == Horizontal) {
+                if (j-1 >= 0) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-1][t][v_]));
+                  if (i+1 < n) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+1][j-1][t][v_]));
+                    if (i+2 < n && vehicles[v].height > 2) {
+                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+2][j-1][t][v_]));
+                    }
+                  }
+                  if (j-2 >= 0 && vehicles[v_].width > 2) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-2][t][v_]));
+                    if (i+1 < n) {
+                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+1][j-2][t][v_]));
+                      if (i+2 < n && vehicles[v].height > 2) {
+                        s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+2][j-2][t][v_]));
+                      }
+                    }
+                  }
+                }
+              }
+              else { // V_ vertical
+                if (i-1 < n) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j][t][v_]));
+                  if (i-2 < n && vehicles[v_].height > 2) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j][t][v_]));
                   }
                 }
               }
             }
           }
-
-          else { //vehicle vertical
-          	if (i + vehicles[v].height <= n) {
-              for (int v_ = 0 ; v < vehicles_number ; v++) {
-                if (v != v_) { // pas deux voitures sur la même case
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j][t][v_]));
-                }
-
-                if (vehicles[v_].orientation == Vertical) {
-                  for (int d = 1 ; d < vehicles[v_].height && i-d >= 0 ; d++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-d][j][t][v_]));
-                  }
-                }
-
-                else {
-                  for (int d = 0 ; d < vehicles[v_].width && j-d >= 0 ; d++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-d][t][v_]));
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j-d][t][v_]));
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j-d][t][v_]));
-                  }
-                }
-              }
-            }
-          }
         }
       }
     }
   }
 
-  //                 G,D                H B
-  // Vérifier action 0,1 = horizontal | 2,3 = vertical
-  for (int t = 0 ; t < time_bound-1 ; t++) {
-    for (int i = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
+
+  // Vérifier que les voitures restent sur leurs axes
+  for (int v = 0 ; v < vehicles_number ; v++) {
+    for (int t = 0 ; t < time_bound ; t++) {
+      if (vehicles[v].orientation == Horizontal) {
         lits.clear();
-        lits.push(~Lit(Moves[i][j][t][0]));
-        lits2.clear();
-        lits2.push(~Lit(Moves[i][j][t][2]));
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          if (vehicles[v].orientation == Horizontal) {
-            lits.push(Lit(Vehicles[i][j][t][v]));
-          }
-          else {
-            lits2.push(Lit(Vehicles[i][j][t][v]));
-          }
-        s.addClause(lits);
-        s.addClause(lits2);
+        for (int j = 0 ; j < n ; j++) {
+          lits.push(Lit(Vehicles[vehicles[v].y][j][t][v]));
         }
+        s.addClause(lits);
       }
-    }
-  }
-  for (int t = 0 ; t < time_bound-1 ; t++) {
-    for (int i = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
+      else {
         lits.clear();
-        lits.push(~Lit(Moves[i][j][t][1]));
-        lits2.clear();
-        lits2.push(~Lit(Moves[i][j][t][3]));
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          if (vehicles[v].orientation == Horizontal) {
-            lits.push(Lit(Vehicles[i][j][t][v]));
-          }
-          else {
-            lits2.push(Lit(Vehicles[i][j][t][v]));
-          }
-        s.addClause(lits);
-        s.addClause(lits2);
+        for (int i = 0 ; i < n ; i++) {
+          lits.push(Lit(Vehicles[i][vehicles[v].x][t][v]));
         }
+        s.addClause(lits);
       }
     }
   }
 
-  // Moves
-  for (int t = 0 ; t < time_bound-1 ; t++) { // Move left
+  for (int t = 0 ; t < time_bound-1 ; t++) { // verify move left done
     for (int i = 0 ; i < n ; i++) {
       for (int j = 1 ; j < n ; j++) {
         for (int v = 0 ; v < vehicles_number ; v++) {
@@ -314,7 +321,8 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       s.addUnit(~Lit(Moves[i][0][t][0]));
     }
   }
-  for (int t = 0 ; t < time_bound-1 ; t++) { // Move right
+
+  for (int t = 0 ; t < time_bound-1 ; t++) { // verify move right done
     for (int i = 0 ; i < n ; i++) {
       for (int j = 0 ; j < n-1 ; j++) {
         for (int v = 0 ; v < vehicles_number ; v++) {
@@ -358,9 +366,14 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
   }
+  for (int t = 0 ; t < time_bound-1 ; t++) { // Disallow bad right move
+    for (int i = 0 ; i < n ; i++) {
+      s.addUnit(~Lit(Moves[i][n-1][t][1]));
+    }
+  }
 
   // 2
-  for (int t = 0 ; t < time_bound-1 ; t++) { // Move Up
+  for (int t = 0 ; t < time_bound-1 ; t++) { // verify move up
     for (int i = 1 ; i < n ; i++) {
       for (int j = 0 ; j < n ; j++) {
         for (int v = 0 ; v < vehicles_number ; v++) {
@@ -379,7 +392,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
   }
-  for (int t = 0 ; t < time_bound-1 ; t++) {
+  for (int t = 0 ; t < time_bound-1 ; t++) { // car same place
     for (int i = 1 ; i < n ; i++) {
       for (int j = 0 ; j < n ; j++) {
         for (int v = 0 ; v < vehicles_number ; v++) {
@@ -405,11 +418,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
   }
     for (int t = 0 ; t < time_bound-1 ; t++) { // Disallow bad up move
       for (int j = 0 ; j < n ; j++) {
-      	s.addUnit(~Lit(Moves[0][j][t][2]));
+        s.addUnit(~Lit(Moves[0][j][t][2]));
       }
     }
   // 3
-  for (int t = 0 ; t < time_bound-1 ; t++) { //Move down
+  for (int t = 0 ; t < time_bound-1 ; t++) { //verify move down done
     for (int i = 0 ; i < n-1 ; i++) {
       for (int j = 0 ; j < n ; j++) {
         for (int v = 0 ; v < vehicles_number ; v++) {
@@ -452,38 +465,12 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
   }
-/*
-  // if some cell has changed its status, then there was a move somewhere affecting it
-  // Changement -> Move
-  // -Changement v Move
-  for (int t = 0 ; t < time_bound-1 ; t++) {
-    for (int i = 0 ; i < n ; i++) {
+    for (int t = 0 ; t < time_bound-1 ; t++) { // Disallow bad down move
       for (int j = 0 ; j < n ; j++) {
-        for (int i_ ; i_ < n ; i_++) {
-          for (int j_ ; j_ < n ; j_++) {
-            for (int v = 0 ; v < vehicles_number ; v++) {
-              lits.clear();
-              lits.push(~Lit(Vehicles[i_][j_][t][v]));
-              lits.push(~Lit(Vehicles[i_][j_][t+1][v]));
-              for (int a = 0 ; a < action ; a++) {
-                lits.push(Lit(Moves[i][j][t][a]));
-              }
-              s.addClause(lits);
-
-              lits.clear();
-              lits.push(Lit(Vehicles[i_][j_][t][v]));
-              lits.push(Lit(Vehicles[i_][j_][t+1][v]));
-              for (int a = 0 ; a < action ; a++) {
-                lits.push(Lit(Moves[i][j][t][a]));
-              }
-              s.addClause(lits);
-            }
-          }
-        }
+        s.addUnit(~Lit(Moves[n-1][j][t][3]));
       }
     }
-  }
-*//*
+
   // 1 move i,j == voiture
   // M -> V
   for (int t = 0 ; t < time_bound-1 ; t++) {
@@ -519,12 +506,12 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
   }
-*/
+
   // No move = rien qui change
   // -MT -> VijTv == VijT+1v
   // MT || VijTv == VijT+1v
-  for (int t = 0 ; t < time_bound-1 ;t++) { // FONCTIONNEL
-  	lits.clear();
+  for (int t = 0 ; t < time_bound-1 ; t++) { // FONCTIONNEL
+    lits.clear();
     for (int i = 0 ; i < n ; i++) {
       for (int j = 0 ; j < n ; j++) {
         for (int a = 0 ; a < action ; a++) {
@@ -552,50 +539,81 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
 
   // Finish
   lits.clear();
-  for (int t = 0 ; t < time_bound ; t++) {
-    lits.push(Lit(Vehicles[n-1-vehicles[0].y][n-2][t][0]));
+  for (int t = 0 ; t < time_bound ; t++) { // Add Resolved = no move
+    lits.push(Lit(Vehicles[vehicles[0].y][n-2][t][0]));
   }
   s.addClause(lits);
 
   // Move when not finished
   // not solved -> move
   // no move -> resolu
-  /*for (int t = 0 ; t < time_bound ; t++) {
+  for (int t = 0 ; t < time_bound ; t++) {
     lits.clear();
-    lits.push(Lit(Vehicles[n-1-vehicles[0].y][n-2][t][0]));
-    for (int i = 0 ;  i < 0 ; i++) {
-      for (int j = 0 ; j < 0 ; j++) {
+    lits.push(Lit(Vehicles[vehicles[0].y][n-2][t][0]));
+    for (int i = 0 ;  i < n ; i++) {
+      for (int j = 0 ; j < n ; j++) {
         for (int a = 0 ; a < action ; a++) {
           lits.push(Lit(Moves[i][j][t][a]));
         }
       }
     }
     s.addClause(lits);
-  }*/
+  }
+  s.addUnit(Lit(Vehicles[vehicles[0].y][n-2][time_bound-1][0]));
+
+
   // Solution
   s.solve();
   if (!s.okay()) {
     std::cout << "pas de solution" << std::endl;
   }
   else {
+  	int board[n][n];
     for (int t = 0 ; t < time_bound ; t++) {
+      for (int i = 0 ; i < n ; i++) {for (int j = 0 ; j < n ; j++) {board[i][j] = -1;}}
+
       for (int i = 0 ; i < n ; i++) {
         for (int j = 0 ; j < n ; j++) {
-          bool found = false;
           for (int v = 0 ; v < vehicles_number ; v++) {
-            if (s.model[Vehicles[i][j][t][v]] == l_True) {found = true; std::cout << ' ' << vehicles[v].id << ' ';}
+            if (s.model[Vehicles[i][j][t][v]] == l_True) {
+              board[i][j] = v;
+              if (vehicles[v].orientation == Horizontal) {
+              	board[i][j+1] = v;
+              	if (vehicles[v].width > 2) {
+              	  board[i][j+2] = v;
+              	}
+              }
+              else {
+              	board[i+1][j] = v;
+              	if (vehicles[v].height > 2) {
+              		board[i+2][j] = v;
+              	}
+              }
+            }
           }
-        if (!found) {std::cout << " XX ";}
         }
-        std::cout << std::endl;
       }
-      std::cout << "Move = ";
+
+      for (int i = 0 ; i < n ; i++) {
+      	for (int j = 0 ; j < n ; j++) {
+      	  if (board[i][j] > -1) {
+      	  	std::cout << vehicles[board[i][j]].id << ' ';
+      	  }
+      	  else {
+      	  	std::cout << "-- ";
+      	  }
+      	}
+      	std::cout << std::endl;
+      }
+
+      std::cout << "-> ";
       bool found = false;
       for (int i = 0 ; i < n ; i++) {
         for (int j = 0 ; j < n ; j++) {
           for (int a = 0 ; a < action ; a++) {
-            if (s.model[Moves[i][j][t][a]] == l_True) {
-              found = true; std::cout << i << ',' << j << " va ";
+            if (s.model[Moves[i][j][t][a]] == l_True && board[i][j] != -1) /*Solve at T*/ {
+              found = true;
+              std::cout << vehicles[board[i][j]].id << " va ";
               switch(a) {
                 case 0: std::cout << "à gauche" << std::endl;break;
                 case 1: std::cout << "à droite" << std::endl;break;
@@ -606,7 +624,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           }
         }
       }
-    if (!found) {std::cout << " No Move " << std::endl;}  
+    if (!found) {std::cout << " No Move " << std::endl;}
     std::cout << std::endl;
     }
   }
