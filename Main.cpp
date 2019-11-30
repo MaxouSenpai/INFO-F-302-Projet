@@ -61,6 +61,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
   Solver s;
   int time_bound = 100;
   int vehicles_number = vehicles.size();
+  int walls_number = fixed.size();
   int action = 4;
   int Vehicles[n][n][time_bound+1][vehicles_number];
   int Moves[n][n][time_bound][action];
@@ -213,91 +214,28 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
   }
 
-  /*
+  // Vérifier no collision with walls
   for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j][t][v_]));
+    for (int w = 0 ; w < walls_number ; w++) {
+      for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
+        for (int j = 0 ; j < fixed[w].width && fixed[w].x+j < n; j++) {
+          // V should not be on case [fixed[w].y+i][fixed[w].x+j]
+          for (int v = 0 ; v < vehicles_number ; v++) {
             if (vehicles[v].orientation == Horizontal) {
-              if (j+1 < n) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+1][t][v_]));
-                if (j+2 < n && vehicles[v].width > 2) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+2][t][v_]));
-                }
-              }
-              if (vehicles[v_].orientation == Horizontal) {
-                if (j-1 >= 0) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-1][t][v_]));
-                  if (j-2 >= 0 && vehicles[v_].width > 2) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-2][t][v_]));
-                  }
-                }
-              }
-              else { // V_ vertical
-                if (i-1 >= 0) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j][t][v_]));
-                  if (j+1 < n) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j+1][t][v_]));
-                    if (j+2 < n && vehicles[v].width > 2) {
-                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j+2][t][v_]));
-                    }
-                  }
-                  if (i-2 >= 0 && vehicles[v_].height > 2) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j][t][v_]));
-                    if (j+1 < n) {
-                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j+1][t][v_]));
-                      if (j+2 < n && vehicles[v].width > 2) {
-                        s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j+2][t][v_]));
-                      }
-                    }
-                  }
-                }
+              for (int j_ = 0 ; j_ < vehicles[v].width && fixed[w].x+j-j_ >= 0 ; j_++) {
+                s.addUnit(~Lit(Vehicles[fixed[w].y+i][fixed[w].x+j-j_][t][v]));
               }
             }
-            else { // V vertical
-              if (i+1 < n) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+1][j][t][v_]));
-                if (i+2 < n && vehicles[v].height > 2) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+2][j][t][v_]));
-                }
-              }
-
-              if (vehicles[v_].orientation == Horizontal) {
-                if (j-1 >= 0) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-1][t][v_]));
-                  if (i+1 < n) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+1][j-1][t][v_]));
-                    if (i+2 < n && vehicles[v].height > 2) {
-                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+2][j-1][t][v_]));
-                    }
-                  }
-                  if (j-2 >= 0 && vehicles[v_].width > 2) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-2][t][v_]));
-                    if (i+1 < n) {
-                      s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+1][j-2][t][v_]));
-                      if (i+2 < n && vehicles[v].height > 2) {
-                        s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+2][j-2][t][v_]));
-                      }
-                    }
-                  }
-                }
-              }
-              else { // V_ vertical
-                if (i-1 >= 0) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-1][j][t][v_]));
-                  if (i-2 >= 0 && vehicles[v_].height > 2) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-2][j][t][v_]));
-                  }
-                }
+            else { // vehicles[v].orientation == Vertical
+              for (int i_ = 0 ; i_ < vehicles[v].height && fixed[w].y+i-i_ >= 0 ; i_++) {
+                s.addUnit(~Lit(Vehicles[fixed[w].y+i-i_][fixed[w].x+j][t][v]));
               }
             }
           }
         }
       }
     }
-  }*/
+  }
 
   // Vérifier que les voitures ne sont pas en dehors de leurs axes
   for (int t = 0 ; t < time_bound+1 ; t++) {
@@ -650,7 +588,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     std::cout << "pas de solution" << std::endl;
   }
   else {
-  	int board[n][n];
+    int board[n][n];
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int i = 0 ; i < n ; i++) {for (int j = 0 ; j < n ; j++) {board[i][j] = -1;}}
 
@@ -674,12 +612,24 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
         }
       }
 
+      for (int w = 0 ; w < walls_number ; w++) {
+        for (int i = 0 ; i < fixed[w].height ; i++) {
+          for (int j = 0 ; j < fixed[w].width ; j++) {
+          board[fixed[w].y+i][fixed[w].x+j] = -2;
+          }
+        }
+      }
+
+
       for (int i = 0 ; i < n ; i++) {
       	for (int j = 0 ; j < n ; j++) {
       	  if (board[i][j] > -1) {
       	  	std::cout << vehicles[board[i][j]].id << ' ';
       	  }
-      	  else {
+      	  else if (board[i][j] == -2) {
+            std::cout << "## ";
+          }
+          else {
       	  	std::cout << "-- ";
       	  }
       	}
