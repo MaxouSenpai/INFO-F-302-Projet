@@ -186,7 +186,12 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           }
         }
       }
-      else {
+    }
+  }
+
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Vertical) {
         for (int j = 0 ; j < n ; j++) {
           for (int l = 1 ; l < vehicles[v].height ; l++) {
             s.addUnit(~Lit(Vehicles[n-l][j][t][v]));
@@ -202,41 +207,93 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       for (int i = 0 ; i < n ; i++) {
         for (int j = 0 ; j < n ; j++) {
           for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j][t][v_]));
             if (vehicles[v].orientation == Horizontal) {
               for (int l = 1 ; j+l < n && l < vehicles[v].width ; l++) {
                 s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+l][t][v_]));
               }
-              if (vehicles[v_].orientation == Horizontal) {
-                for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-l][t][v_]));
-                }
-              }
-              else { // V_ vertical
-                for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
-                  for (int l_ = 0 ; j+l_ < n && l_ < vehicles[v].width ; l_++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j+l_][t][v_]));
-                  }
-                }
-              }
             }
-            else { // V vertical
+          }
+        }
+      }
+    }
+  }
+
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+            if (vehicles[v].orientation == Vertical) {
               for (int l = 1 ; i+l < n && l < vehicles[v].height ; l++) {
                 s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l][j][t][v_]));
               }
+            }
+          }
+        }
+      }
+    }
+  }
 
-              if (vehicles[v_].orientation == Horizontal) {
-                for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
-                  for (int l_ = 0 ; i+l_ < n && l_ < vehicles[v].height ; l_++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l_][j-l][t][v_]));
-                  }
-                }
-
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+            if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Horizontal) {
+              for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
+                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-l][t][v_]));
               }
-              else { // V_ vertical
-                for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j][t][v_]));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+            if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Vertical) {
+              for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
+                for (int l_ = 0 ; j+l_ < n && l_ < vehicles[v].width ; l_++) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j+l_][t][v_]));
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+            if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Horizontal) {
+              for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
+                for (int l_ = 0 ; i+l_ < n && l_ < vehicles[v].height ; l_++) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l_][j-l][t][v_]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+            if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Vertical) {
+              for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
+                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j][t][v_]));
               }
             }
           }
@@ -257,7 +314,18 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
                 s.addUnit(~Lit(Vehicles[fixed[w].y+i][fixed[w].x+j-j_][t][v]));
               }
             }
-            else { // vehicles[v].orientation == Vertical
+          }
+        }
+      }
+    }
+  }
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int w = 0 ; w < walls_number ; w++) {
+      for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
+        for (int j = 0 ; j < fixed[w].width && fixed[w].x+j < n; j++) {
+          // V should not be on case [fixed[w].y+i][fixed[w].x+j]
+          for (int v = 0 ; v < vehicles_number ; v++) {            
+            if (vehicles[v].orientation == Vertical) {
               for (int i_ = 0 ; i_ < vehicles[v].height && fixed[w].y+i-i_ >= 0 ; i_++) {
                 s.addUnit(~Lit(Vehicles[fixed[w].y+i-i_][fixed[w].x+j][t][v]));
               }
@@ -276,7 +344,16 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           if (vehicles[v].orientation == Horizontal && i != vehicles[v].y) {
             s.addUnit(~Lit(Vehicles[i][j][t][v]));
           }
-          else if (vehicles[v].orientation == Vertical && j != vehicles[v].x) {
+        }
+      }
+    }
+  }
+
+  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {          
+          if (vehicles[v].orientation == Vertical && j != vehicles[v].x) {
             s.addUnit(~Lit(Vehicles[i][j][t][v]));
           }
         }
@@ -298,7 +375,13 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[vehicles[v].y][j-1][t+1][v]));
           s.addClause(lits);
         }
+      }
+    }
+  }
 
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Horizontal) {
         //Mvt0 && Vijt+1V -> Vij+1tV Is it useful?
         for (int j = 0 ; j < n-1 ; j++) {
           lits.clear();
@@ -307,32 +390,15 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[vehicles[v].y][j+1][t][v]));
           s.addClause(lits);
         }
+      }
+    }
+  }
 
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Horizontal) {
         // Mvt0 -> -Vi0tv
         s.addBinary(~Lit(Moves[v][t][0]),~Lit(Vehicles[vehicles[v].y][0][t][v]));
-
-        //Mvt0 && -VijtV && -Vijt+1V -> (Vijtv xnor Vijtv)
-        for (int i = 0 ; i < n ; i++) {
-          for (int j = 0 ; j < n ; j++) {
-            for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][0]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(~Lit(Vehicles[i][j][t][v_]));
-              lits.push(Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][0]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(Lit(Vehicles[i][j][t][v_]));
-              lits.push(~Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-            }
-          }
-        }
       }
     }
   }
@@ -349,7 +415,13 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[vehicles[v].y][j+1][t+1][v]));
           s.addClause(lits);
         }
+      }
+    }
+  }
 
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Horizontal) {
         //Mvt0 && Vijt+1V -> Vij-1tV Is it useful?
         for (int j = 1 ; j < n ; j++) {
           lits.clear();
@@ -357,29 +429,6 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(~Lit(Vehicles[vehicles[v].y][j][t+1][v]));
           lits.push(Lit(Vehicles[vehicles[v].y][j-1][t][v]));
           s.addClause(lits);
-        }        
-
-        //Mvt0 && -VijtV && -Vijt+1V -> (Vijtv xnor Vijtv)
-        for (int i = 0 ; i < n ; i++) {
-          for (int j = 0 ; j < n ; j++) {
-            for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][1]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(~Lit(Vehicles[i][j][t][v_]));
-              lits.push(Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][1]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(Lit(Vehicles[i][j][t][v_]));
-              lits.push(~Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-            }
-          }
         }
       }
     }
@@ -397,7 +446,13 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[i-1][vehicles[v].x][t+1][v]));
           s.addClause(lits);
         }
+      }
+    }
+  }
 
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Vertical) {
         //Mvt0 && Vijt+1V -> Vi+1jtV Is it useful?
         for (int i = 0 ; i < n-1 ; i++) {
           lits.clear();
@@ -406,32 +461,14 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[i+1][vehicles[v].x][t][v]));
           s.addClause(lits);
         }
-
+      }
+    }
+  }
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Vertical) {
         // Mvt0 -> -V0jtv
         s.addBinary(~Lit(Moves[v][t][0]),~Lit(Vehicles[0][vehicles[v].y][t][v]));
-
-        //Mvt0 && -VijtV && -Vijt+1V -> (Vijtv xnor Vijtv)
-        for (int i = 0 ; i < n ; i++) {
-          for (int j = 0 ; j < n ; j++) {
-            for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][0]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(~Lit(Vehicles[i][j][t][v_]));
-              lits.push(Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][0]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(Lit(Vehicles[i][j][t][v_]));
-              lits.push(~Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-            }
-          }
-        }
       }
     }
   }
@@ -448,7 +485,13 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[i+1][vehicles[v].x][t+1][v]));
           s.addClause(lits);
         }
+      }
+    }
+  }
 
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      if (vehicles[v].orientation == Vertical) {
         //Mvt0 && Vijt+1V -> Vi-1jtV Is it useful?
         for (int i = 1 ; i < n ; i++) {
           lits.clear();
@@ -457,13 +500,20 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           lits.push(Lit(Vehicles[i-1][vehicles[v].x][t][v]));
           s.addClause(lits);
         }
+      }
+    }
+  }
 
-        //Mvt0 && -VijtV && -Vijt+1V -> (Vijtv xnor Vijtv)
+  // Nothing else change
+  // Mvta && -VijtV && -Vijt+1V -> (Vijtv xnor Vijtv)
+  for (int t = 0 ; t < time_bound ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int a = 0 ; a < actions_number ; a++) {
         for (int i = 0 ; i < n ; i++) {
           for (int j = 0 ; j < n ; j++) {
             for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
               lits.clear();
-              lits.push(~Lit(Moves[v][t][1]));
+              lits.push(~Lit(Moves[v][t][a]));
               lits.push(Lit(Vehicles[i][j][t][v]));
               lits.push(Lit(Vehicles[i][j][t+1][v]));
               lits.push(~Lit(Vehicles[i][j][t][v_]));
@@ -471,7 +521,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
               s.addClause(lits);
 
               lits.clear();
-              lits.push(~Lit(Moves[v][t][1]));
+              lits.push(~Lit(Moves[v][t][a]));
               lits.push(Lit(Vehicles[i][j][t][v]));
               lits.push(Lit(Vehicles[i][j][t+1][v]));
               lits.push(Lit(Vehicles[i][j][t][v_]));
