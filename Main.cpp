@@ -1,5 +1,5 @@
-/* Matricule - Nom Prenom
- * (Matricule2 - Nom2 Prenom2)
+/* 445166 - Bakkali Yahya
+ * 461714 - Hauwaert Maxime
  *
  */
 #include "Solver.hpp"
@@ -54,635 +54,568 @@ void pretty_print(vector<Block> &blocks) {
  * @param k: number of solutions to find
  */
 void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
-  pretty_print(vehicles);
-  pretty_print(fixed);
+  //pretty_print(vehicles);
+  //pretty_print(fixed);
 
-  // A COMPLETER
-  Solver s;
-  int time_bound = 100;
-  int vehicles_number = vehicles.size();
-  int walls_number = fixed.size();
-  int actions_number = 2;
-  int Vehicles[n][n][time_bound+1][vehicles_number];
-  int Moves[vehicles_number][time_bound][actions_number];
+  int solutions_found = 0;
+  int time_bound = 1;
 
-  vec<Lit> lits;
-  vec<Lit> lits2;
+  while (time_bound <= 100 && solutions_found < k) {
 
-  // ajout des propositions
-  for (int i = 0 ; i < n ; i++) {
-    for (int j = 0 ; j < n ; j++) {
-      for (int t = 0 ; t < time_bound+1 ; t++) {
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          Vehicles[i][j][t][v] = s.newVar();
-        }
-      }
-    }
-  }
+    Solver s;
+    int vehicles_number = vehicles.size();
+    int walls_number = fixed.size();
+    int actions_number = 2;
+    int Vehicles[n][n][time_bound+1][vehicles_number];
+    int Moves[vehicles_number][time_bound][actions_number];
 
-  for (int v = 0 ; v < vehicles_number ; v++) {
-    for (int t = 0 ; t < time_bound ; t++) {
-      for (int a = 0 ; a < actions_number ; a++) {
-        Moves[v][t][a] = s.newVar();
-      }
-    }
-  }
+    vec<Lit> lits;
 
-
-  // initial configuration
-  int startBoard[n][n];
-  for (int i  = 0 ; i < n ; i++) {
-    for (int j = 0 ; j < n ; j++) {
-      startBoard[i][j]=-1;
-      }
-    }
-
-  for (int v = 0 ; v < vehicles_number ; v++) {
-    startBoard[vehicles[v].y][vehicles[v].x] = v;
-  }
-
-  for (int i = 0 ; i < n ; i++) {
-    for (int j = 0 ; j < n ; j++) {
-      for (int v = 0 ; v < vehicles_number ; v++) {
-        if (startBoard[i][j] == v) {
-          s.addUnit(Lit(Vehicles[i][j][0][v]));
-        }
-        else {
-          s.addUnit(~Lit(Vehicles[i][j][0][v]));
-        }
-      }
-    }
-  }
-
-  // at most one move per round
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int a = 0 ; a < actions_number ; a++) {
-        for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
-          for (int a_ = 0 ; a_ < actions_number ; a_++) {
-            if (v != v_ || a != a_) {
-              s.addBinary(~Lit(Moves[v][t][a]),~Lit(Moves[v_][t][a_]));
-            }
+    // ajout des propositions
+    for (int i = 0 ; i < n ; i++) {
+      for (int j = 0 ; j < n ; j++) {
+        for (int t = 0 ; t < time_bound+1 ; t++) {
+          for (int v = 0 ; v < vehicles_number ; v++) {
+            Vehicles[i][j][t][v] = s.newVar();
           }
         }
       }
     }
-  }
 
-  // at most one vehicle per case
-  for (int t = 0 ; t < time_bound+1 ; t++) {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int t = 0 ; t < time_bound ; t++) {
+        for (int a = 0 ; a < actions_number ; a++) {
+          Moves[v][t][a] = s.newVar();
+        }
+      }
+    }
+
+
+    // Initialisation du parking
+    int startBoard[n][n];
+    for (int i  = 0 ; i < n ; i++) {
+      for (int j = 0 ; j < n ; j++) {
+        startBoard[i][j]=-1;
+        }
+      }
+
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      startBoard[vehicles[v].y][vehicles[v].x] = v;
+    }
+
     for (int i = 0 ; i < n ; i++) {
       for (int j = 0 ; j < n ; j++) {
         for (int v = 0 ; v < vehicles_number ; v++) {
+          if (startBoard[i][j] == v) {
+            s.addUnit(Lit(Vehicles[i][j][0][v]));
+          }
+          else {
+            s.addUnit(~Lit(Vehicles[i][j][0][v]));
+          }
+        }
+      }
+    }
+
+    // À chaque instant, on ne peut avoir qu’au maximum un mouvement
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int a = 0 ; a < actions_number ; a++) {
           for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
-            if (v != v_) {
-              s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j][t][v_]));
+            for (int a_ = 0 ; a_ < actions_number ; a_++) {
+              if (v != v_ || a != a_) {
+                s.addBinary(~Lit(Moves[v][t][a]),~Lit(Moves[v_][t][a_]));
+              }
             }
           }
         }
       }
     }
-  }
 
-  // Always every type of car on the board
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
+    // À chaque instant, il faut y avoir un mouvement
+    for (int t = 0 ; t < time_bound ; t++) {
       lits.clear();
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          lits.push(Lit(Vehicles[i][j][t][v]));
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int a = 0 ; a < actions_number ; a++) {
+          lits.push(Lit(Moves[v][t][a]));
         }
       }
       s.addClause(lits);
     }
-  }
 
-  // One type of car on the board
 
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int i_ = 0 ; i_ < n ; i_++) {
-            for (int j_ = 0 ; j_ < n ; j_++) {
-              if ((i_ != i) || (j_ != j)) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i_][j_][t][v]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  //Illegal positions
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Horizontal) {
-        for (int i = 0 ; i < n ; i++) {
-          for (int l = 1 ; l < vehicles[v].width ; l++) {
-            s.addUnit(~Lit(Vehicles[i][n-l][t][v]));
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Vertical) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int l = 1 ; l < vehicles[v].height ; l++) {
-            s.addUnit(~Lit(Vehicles[n-l][j][t][v]));
-          }
-        }
-      }
-    }
-  }
-
-  // Vérifier no collision
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            if (vehicles[v].orientation == Horizontal) {
-              for (int l = 1 ; j+l < n && l < vehicles[v].width ; l++) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+l][t][v_]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            if (vehicles[v].orientation == Vertical) {
-              for (int l = 1 ; i+l < n && l < vehicles[v].height ; l++) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l][j][t][v_]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Horizontal) {
-              for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-l][t][v_]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Vertical) {
-              for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
-                for (int l_ = 0 ; j+l_ < n && l_ < vehicles[v].width ; l_++) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j+l_][t][v_]));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Horizontal) {
-              for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
-                for (int l_ = 0 ; i+l_ < n && l_ < vehicles[v].height ; l_++) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l_][j-l][t][v_]));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-            if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Vertical) {
-              for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
-                s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j][t][v_]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Vérifier no collision with walls
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int w = 0 ; w < walls_number ; w++) {
-      for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
-        for (int j = 0 ; j < fixed[w].width && fixed[w].x+j < n; j++) {
-          // V should not be on case [fixed[w].y+i][fixed[w].x+j]
-          for (int v = 0 ; v < vehicles_number ; v++) {
-            if (vehicles[v].orientation == Horizontal) {
-              for (int j_ = 0 ; j_ < vehicles[v].width && fixed[w].x+j-j_ >= 0 ; j_++) {
-                s.addUnit(~Lit(Vehicles[fixed[w].y+i][fixed[w].x+j-j_][t][v]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int w = 0 ; w < walls_number ; w++) {
-      for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
-        for (int j = 0 ; j < fixed[w].width && fixed[w].x+j < n; j++) {
-          // V should not be on case [fixed[w].y+i][fixed[w].x+j]
-          for (int v = 0 ; v < vehicles_number ; v++) {            
-            if (vehicles[v].orientation == Vertical) {
-              for (int i_ = 0 ; i_ < vehicles[v].height && fixed[w].y+i-i_ >= 0 ; i_++) {
-                s.addUnit(~Lit(Vehicles[fixed[w].y+i-i_][fixed[w].x+j][t][v]));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Vérifier que les voitures ne sont pas en dehors de leurs axes
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          if (vehicles[v].orientation == Horizontal && i != vehicles[v].y) {
-            s.addUnit(~Lit(Vehicles[i][j][t][v]));
-          }
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {          
-          if (vehicles[v].orientation == Vertical && j != vehicles[v].x) {
-            s.addUnit(~Lit(Vehicles[i][j][t][v]));
-          }
-        }
-      }
-    }
-  }
-
-  //Move 0 -> left / up
-
-  // Move Left
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Horizontal) {
-        //Mvt0 && VijtV -> Vij-1t+1V
-        for (int j = 1 ; j < n ; j++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][0]));
-          lits.push(~Lit(Vehicles[vehicles[v].y][j][t][v]));
-          lits.push(Lit(Vehicles[vehicles[v].y][j-1][t+1][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Horizontal) {
-        //Mvt0 && Vijt+1V -> Vij+1tV Is it useful?
-        for (int j = 0 ; j < n-1 ; j++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][0]));
-          lits.push(~Lit(Vehicles[vehicles[v].y][j][t+1][v]));
-          lits.push(Lit(Vehicles[vehicles[v].y][j+1][t][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Horizontal) {
-        // Mvt0 -> -Vi0tv
-        s.addBinary(~Lit(Moves[v][t][0]),~Lit(Vehicles[vehicles[v].y][0][t][v]));
-      }
-    }
-  }
-
-  // Move Right
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Horizontal) {
-        //Mvt0 && VijtV -> Vij+1t+1V
-        for (int j = 0 ; j < n-1 ; j++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][1]));
-          lits.push(~Lit(Vehicles[vehicles[v].y][j][t][v]));
-          lits.push(Lit(Vehicles[vehicles[v].y][j+1][t+1][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Horizontal) {
-        //Mvt0 && Vijt+1V -> Vij-1tV Is it useful?
-        for (int j = 1 ; j < n ; j++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][1]));
-          lits.push(~Lit(Vehicles[vehicles[v].y][j][t+1][v]));
-          lits.push(Lit(Vehicles[vehicles[v].y][j-1][t][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  // Move Up
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Vertical) {
-        //Mvt0 && VijtV -> Vi-1jt+1V
-        for (int i = 1 ; i < n ; i++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][0]));
-          lits.push(~Lit(Vehicles[i][vehicles[v].x][t][v]));
-          lits.push(Lit(Vehicles[i-1][vehicles[v].x][t+1][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Vertical) {
-        //Mvt0 && Vijt+1V -> Vi+1jtV Is it useful?
-        for (int i = 0 ; i < n-1 ; i++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][0]));
-          lits.push(~Lit(Vehicles[i][vehicles[v].x][t+1][v]));
-          lits.push(Lit(Vehicles[i+1][vehicles[v].x][t][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Vertical) {
-        // Mvt0 -> -V0jtv
-        s.addBinary(~Lit(Moves[v][t][0]),~Lit(Vehicles[0][vehicles[v].y][t][v]));
-      }
-    }
-  }
-
-  // Move Down
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Vertical) {
-        //Mvt0 && VijtV -> Vi+1jt+1V
-        for (int i = 0 ; i < n-1 ; i++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][1]));
-          lits.push(~Lit(Vehicles[i][vehicles[v].x][t][v]));
-          lits.push(Lit(Vehicles[i+1][vehicles[v].x][t+1][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      if (vehicles[v].orientation == Vertical) {
-        //Mvt0 && Vijt+1V -> Vi-1jtV Is it useful?
-        for (int i = 1 ; i < n ; i++) {
-          lits.clear();
-          lits.push(~Lit(Moves[v][t][1]));
-          lits.push(~Lit(Vehicles[i][vehicles[v].x][t+1][v]));
-          lits.push(Lit(Vehicles[i-1][vehicles[v].x][t][v]));
-          s.addClause(lits);
-        }
-      }
-    }
-  }
-
-  // Nothing else change
-  // Mvta && -VijtV && -Vijt+1V -> (Vijtv xnor Vijtv)
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int a = 0 ; a < actions_number ; a++) {
+    // Au maximum une voiture à une position
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
           for (int j = 0 ; j < n ; j++) {
-            for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][a]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(~Lit(Vehicles[i][j][t][v_]));
-              lits.push(Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-
-              lits.clear();
-              lits.push(~Lit(Moves[v][t][a]));
-              lits.push(Lit(Vehicles[i][j][t][v]));
-              lits.push(Lit(Vehicles[i][j][t+1][v]));
-              lits.push(Lit(Vehicles[i][j][t][v_]));
-              lits.push(~Lit(Vehicles[i][j][t+1][v_]));
-              s.addClause(lits);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // No move = rien qui change
-  // -MT -> VijTv == VijT+1v
-  // MT || VijTv == VijT+1v
-  for (int t = 0 ; t < time_bound ; t++) {
-    lits.clear();
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int a = 0 ; a < actions_number ; a++) {
-        lits.push(Lit(Moves[v][t][a]));
-      }
-    }
-    for (int i = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          lits.push(~Lit(Vehicles[i][j][t][v]));
-          lits.push(Lit(Vehicles[i][j][t+1][v]));
-          s.addClause(lits);
-          lits.pop();
-          lits.pop();
-          lits.push(Lit(Vehicles[i][j][t][v]));
-          lits.push(~Lit(Vehicles[i][j][t+1][v]));
-          s.addClause(lits);
-          lits.pop();
-          lits.pop();
-        }
-      }
-    }
-  }
-
-  // Finish
-  lits.clear();
-  for (int t = 0 ; t < time_bound+1 ; t++) {
-    lits.push(Lit(Vehicles[vehicles[0].y][n-2][t][0]));
-  }
-  s.addClause(lits);
-
-  // Resolved = no move
-  // VijT0 -> -MijTo
-  // VijT0 -> -(M12T1 || M13T2)
-  // -VijT0 || -M12T1
-
-  for (int t = 0 ; t < time_bound ; t++) {
-    for (int v = 0 ; v < vehicles_number ; v++) {
-      for (int a = 0 ; a < actions_number ; a++) {
-        s.addBinary(~Lit(Vehicles[vehicles[0].y][n-2][t][0]),~Lit(Moves[v][t][a]));
-      }
-    }
-  }
-
-  // Move when not finished
-  // not solved -> move
-  // no move -> resolu
-  for (int t = 0 ; t < time_bound ; t++) {
-    lits.clear();
-    lits.push(Lit(Vehicles[vehicles[0].y][n-2][t][0]));
-    for (int v = 0 ;  v < vehicles_number ; v++) {
-      for (int a = 0 ; a < actions_number ; a++) {
-        lits.push(Lit(Moves[v][t][a]));
-      }
-    }
-    s.addClause(lits);
-  }
-
-  // Solution
-  s.solve();
-  if (!s.okay()) {
-    std::cout << "pas de solution" << std::endl;
-  }
-  else {
-    int board[n][n];
-    for (int t = 0 ; t < time_bound+1 ; t++) {
-      for (int i = 0 ; i < n ; i++) {for (int j = 0 ; j < n ; j++) {board[i][j] = -1;}}
-
-      for (int i = 0 ; i < n ; i++) {
-        for (int j = 0 ; j < n ; j++) {
-          for (int v = 0 ; v < vehicles_number ; v++) {
-            if (s.model[Vehicles[i][j][t][v]] == l_True) {
-              board[i][j] = v;
+            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
               if (vehicles[v].orientation == Horizontal) {
-              	for (int l = 1 ; l < vehicles[v].width ; l++) {
-                  board[i][j+l] = v;
-                }
-              }
-              else {
-                for (int l = 1 ; l < vehicles[v].height ; l++) {
-                  board[i+l][j] = v;
+                for (int l = 1 ; j+l < n && l < vehicles[v].width ; l++) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+l][t][v_]));
                 }
               }
             }
           }
         }
-      }
-
-      for (int w = 0 ; w < walls_number ; w++) {
-        for (int i = 0 ; i < fixed[w].height ; i++) {
-          for (int j = 0 ; j < fixed[w].width ; j++) {
-          board[fixed[w].y+i][fixed[w].x+j] = -2;
-          }
-        }
-      }
-
-
-      for (int i = 0 ; i < n ; i++) {
-      	for (int j = 0 ; j < n ; j++) {
-      	  if (board[i][j] > -1) {
-      	  	std::cout << vehicles[board[i][j]].id << ' ';
-      	  }
-      	  else if (board[i][j] == -2) {
-            std::cout << "## ";
-          }
-          else {
-      	  	std::cout << "-- ";
-      	  }
-      	}
-      	std::cout << std::endl;
-      }
-      if (t < time_bound) {
-        std::cout << "-> ";
-        bool found = false;
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          for (int a = 0 ; a < actions_number ; a++) {
-            if (s.model[Moves[v][t][a]] == l_True) /*Solve at T*/ {
-              found = true;
-              std::cout << vehicles[v].id << " va ";
-              if (!a) {
-                if (vehicles[v].orientation == Horizontal) {
-                  std::cout << "à gauche" << std::endl;
-                }
-                else {
-                  std::cout << "en haut" << std::endl;
-                }
-              }
-              else {
-                if (vehicles[v].orientation == Horizontal) {
-                  std::cout << "à droite" << std::endl;
-                }
-                else {
-                  std::cout << "en bas" << std::endl;
-                }
-
-              }
-            }
-          }
-        }
-      if (!found) {std::cout << " No Move" << std::endl;}
-      std::cout << std::endl;
       }
     }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+              if (vehicles[v].orientation == Vertical) {
+                for (int l = 1 ; i+l < n && l < vehicles[v].height ; l++) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l][j][t][v_]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+
+    // Toutes les voitures doivent être dans le parking
+
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        lits.clear();
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            lits.push(Lit(Vehicles[i][j][t][v]));
+          }
+        }
+        s.addClause(lits);
+      }
+    }
+
+    // Il n’y a pas plusieurs fois la même voiture
+
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int i_ = 0 ; i_ < n ; i_++) {
+              for (int j_ = 0 ; j_ < n ; j_++) {
+                if ((i_ != i) || (j_ != j)) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i_][j_][t][v]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Pas de collision entre les voitures et les murs du parking
+    
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Horizontal) {
+          for (int i = 0 ; i < n ; i++) {
+            for (int l = 1 ; l < vehicles[v].width ; l++) {
+              s.addUnit(~Lit(Vehicles[i][n-l][t][v]));
+            }
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Vertical) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int l = 1 ; l < vehicles[v].height ; l++) {
+              s.addUnit(~Lit(Vehicles[n-l][j][t][v]));
+            }
+          }
+        }
+      }
+    }
+
+    // Pas de collision entre les voitures
+    //  Voitures Horizontales — Voitures Horizontales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+              if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Horizontal) {
+                for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j-l][t][v_]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //  Voitures Horizontales — Voitures Verticales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+              if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Vertical) {
+                for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
+                  for (int l_ = 0 ; j+l_ < n && l_ < vehicles[v].width ; l_++) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j+l_][t][v_]));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales — Voitures Horizontales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+              if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Horizontal) {
+                for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
+                  for (int l_ = 0 ; i+l_ < n && l_ < vehicles[v].height ; l_++) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l_][j-l][t][v_]));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales — Voitures Verticales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
+              if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Vertical) {
+                for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
+                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j][t][v_]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Pas de collision entre les voitures et les blocs fixes du parking
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int w = 0 ; w < walls_number ; w++) {
+        for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
+          for (int j = 0 ; j < fixed[w].width && fixed[w].x+j < n; j++) {
+            for (int v = 0 ; v < vehicles_number ; v++) {
+              if (vehicles[v].orientation == Horizontal) {
+                for (int j_ = 0 ; j_ < vehicles[v].width && fixed[w].x+j-j_ >= 0 ; j_++) {
+                  s.addUnit(~Lit(Vehicles[fixed[w].y+i][fixed[w].x+j-j_][t][v]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int w = 0 ; w < walls_number ; w++) {
+        for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
+          for (int j = 0 ; j < fixed[w].width && fixed[w].x+j < n; j++) {
+            for (int v = 0 ; v < vehicles_number ; v++) {            
+              if (vehicles[v].orientation == Vertical) {
+                for (int i_ = 0 ; i_ < vehicles[v].height && fixed[w].y+i-i_ >= 0 ; i_++) {
+                  s.addUnit(~Lit(Vehicles[fixed[w].y+i-i_][fixed[w].x+j][t][v]));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Les voitures ne doivent pas être en dehors de leur axe
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {
+            if (vehicles[v].orientation == Horizontal && i != vehicles[v].y) {
+              s.addUnit(~Lit(Vehicles[i][j][t][v]));
+            }
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound+1 ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int i = 0 ; i < n ; i++) {
+          for (int j = 0 ; j < n ; j++) {          
+            if (vehicles[v].orientation == Vertical && j != vehicles[v].x) {
+              s.addUnit(~Lit(Vehicles[i][j][t][v]));
+            }
+          }
+        }
+      }
+    }
+
+    // Vérifier que les actions /avancer/ ont été faites
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Horizontal) {
+          for (int j = 0 ; j < n-1 ; j++) {
+            lits.clear();
+            lits.push(~Lit(Moves[v][t][1]));
+            lits.push(~Lit(Vehicles[vehicles[v].y][j][t][v]));
+            lits.push(Lit(Vehicles[vehicles[v].y][j+1][t+1][v]));
+            s.addClause(lits);
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Vertical) {
+          for (int i = 0 ; i < n-1 ; i++) {
+            lits.clear();
+            lits.push(~Lit(Moves[v][t][1]));
+            lits.push(~Lit(Vehicles[i][vehicles[v].x][t][v]));
+            lits.push(Lit(Vehicles[i+1][vehicles[v].x][t+1][v]));
+            s.addClause(lits);
+          }
+        }
+      }
+    }
+
+    // Vérifier que les actions /reculer/ ont été faites
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Horizontal) {
+          for (int j = 1 ; j < n ; j++) {
+            lits.clear();
+            lits.push(~Lit(Moves[v][t][0]));
+            lits.push(~Lit(Vehicles[vehicles[v].y][j][t][v]));
+            lits.push(Lit(Vehicles[vehicles[v].y][j-1][t+1][v]));
+            s.addClause(lits);
+          }
+        }
+      }
+    }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Vertical) {
+          for (int i = 1 ; i < n ; i++) {
+            lits.clear();
+            lits.push(~Lit(Moves[v][t][0]));
+            lits.push(~Lit(Vehicles[i][vehicles[v].x][t][v]));
+            lits.push(Lit(Vehicles[i-1][vehicles[v].x][t+1][v]));
+            s.addClause(lits);
+          }
+        }
+      }
+    }
+
+    // Interdire les actions /reculer/ qui font sortir les voitures du parking
+    //  Voitures Horizontales
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Horizontal) {
+          s.addBinary(~Lit(Moves[v][t][0]),~Lit(Vehicles[vehicles[v].y][0][t][v]));
+        }
+      }
+    }
+
+    //  Voitures Verticales
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        if (vehicles[v].orientation == Vertical) {
+          s.addBinary(~Lit(Moves[v][t][0]),~Lit(Vehicles[0][vehicles[v].x][t][v]));
+        }
+      }
+    }
+
+
+    // Vérifier que les voitures non-affectées par l’action effectuée ne changent pas
+    for (int t = 0 ; t < time_bound ; t++) {
+      for (int v = 0 ; v < vehicles_number ; v++) {
+        for (int a = 0 ; a < actions_number ; a++) {
+          for (int i = 0 ; i < n ; i++) {
+            for (int j = 0 ; j < n ; j++) {
+              for (int v_ = 0 ; v_ < vehicles_number ; v_++) {
+                lits.clear();
+                lits.push(~Lit(Moves[v][t][a]));
+                lits.push(Lit(Vehicles[i][j][t][v]));
+                lits.push(Lit(Vehicles[i][j][t+1][v]));
+                lits.push(~Lit(Vehicles[i][j][t][v_]));
+                lits.push(Lit(Vehicles[i][j][t+1][v_]));
+                s.addClause(lits);
+
+                lits.clear();
+                lits.push(~Lit(Moves[v][t][a]));
+                lits.push(Lit(Vehicles[i][j][t][v]));
+                lits.push(Lit(Vehicles[i][j][t+1][v]));
+                lits.push(Lit(Vehicles[i][j][t][v_]));
+                lits.push(~Lit(Vehicles[i][j][t+1][v_]));
+                s.addClause(lits);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // La voiture rouge doit se trouver à côté de la sortie du parking à la fin de la limite de temps
+    s.addUnit(Lit(Vehicles[vehicles[0].y][n-2][time_bound][0]));
+
+    bool can_continue = true;
+    while (solutions_found < k && can_continue) {
+      s.solve();
+      if (!s.okay()) {
+        //std::cout << "Pas de solution à " << time_bound << " mouvements!" << std::endl;
+        can_continue = false;
+      }
+      else {
+        //std::cout << "Solution à " << time_bound << " mouvements!" << std::endl;
+        lits.clear();
+        /*
+        for (int t = 0 ; t < time_bound ; t++) {
+          for (int v = 0 ; v < vehicles_number ; v++) {
+            for (int a = 0 ; a < actions_number ; a++) {
+              if (s.model[Moves[v][t][a]] == l_True) {
+                lits.push(~Lit(Moves[v][t][a]));
+                std::cout << vehicles[v].id << " ";
+                if (!a) {
+                  if (vehicles[v].orientation == Horizontal) {
+                    std::cout << "L" << std::endl;
+                  }
+                  else {
+                    std::cout << "U" << std::endl;
+                  }
+                }
+                else {
+                  if (vehicles[v].orientation == Horizontal) {
+                    std::cout << "R" << std::endl;
+                  }
+                  else {
+                    std::cout << "D" << std::endl;
+                  }
+                }
+              }
+            }
+          }
+        }
+        std::cout << std::endl;
+        s.addClause(lits);
+        solutions_found++;
+        */
+        // Solutions
+        solutions_found++;
+        int board[n][n];
+        for (int t = 0 ; t < time_bound+1 ; t++) {
+          for (int i = 0 ; i < n ; i++) {for (int j = 0 ; j < n ; j++) {board[i][j] = -1;}}
+
+          for (int i = 0 ; i < n ; i++) {
+            for (int j = 0 ; j < n ; j++) {
+              for (int v = 0 ; v < vehicles_number ; v++) {
+                if (s.model[Vehicles[i][j][t][v]] == l_True) {
+                  board[i][j] = v;
+                  if (vehicles[v].orientation == Horizontal) {
+                    for (int l = 1 ; l < vehicles[v].width ; l++) {
+                      board[i][j+l] = v;
+                    }
+                  }
+                  else {
+                    for (int l = 1 ; l < vehicles[v].height ; l++) {
+                      board[i+l][j] = v;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          for (int w = 0 ; w < walls_number ; w++) {
+            for (int i = 0 ; i < fixed[w].height ; i++) {
+              for (int j = 0 ; j < fixed[w].width ; j++) {
+              board[fixed[w].y+i][fixed[w].x+j] = -2;
+              }
+            }
+          }
+
+          for (int i = 0 ; i < n ; i++) {
+            for (int j = 0 ; j < n ; j++) {
+              if (board[i][j] > -1) {
+                std::cout << vehicles[board[i][j]].id << ' ';
+              }
+              else if (board[i][j] == -2) {
+                std::cout << "## ";
+              }
+              else {
+                std::cout << "-- ";
+              }
+            }
+            std::cout << std::endl;
+          }
+          if (t < time_bound) {
+            std::cout << "-> ";
+            bool found = false;
+            for (int v = 0 ; v < vehicles_number ; v++) {
+              for (int a = 0 ; a < actions_number ; a++) {
+                if (s.model[Moves[v][t][a]] == l_True) {
+                  lits.push(~Lit(Moves[v][t][a]));
+                  found = true;
+                  std::cout << vehicles[v].id << " va ";
+                  if (!a) {
+                    if (vehicles[v].orientation == Horizontal) {
+                      std::cout << "à gauche" << std::endl;
+                    }
+                    else {
+                      std::cout << "en haut" << std::endl;
+                    }
+                  }
+                  else {
+                    if (vehicles[v].orientation == Horizontal) {
+                      std::cout << "à droite" << std::endl;
+                    }
+                    else {
+                      std::cout << "en bas" << std::endl;
+                    }
+                  }
+                }
+              }
+            }
+          if (!found) {std::cout << " No Move" << std::endl;}
+          std::cout << std::endl;
+          }
+        }
+        s.addClause(lits);
+      }
+    }
+    time_bound++;
   }
 }
+
 
 /**
  * Prints program help message
