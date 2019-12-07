@@ -151,7 +151,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           for (int j = 0 ; j < n ; j++) {
             for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
               if (vehicles[v].orientation == Horizontal) {
-                for (int l = 1 ; j+l < n && l < vehicles[v].width ; l++) {
+                for (int l = 0 ; j+l < n && l < vehicles[v].width ; l++) {
                   s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+l][t][v_]));
                 }
               }
@@ -168,7 +168,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
           for (int j = 0 ; j < n ; j++) {
             for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
               if (vehicles[v].orientation == Vertical) {
-                for (int l = 1 ; i+l < n && l < vehicles[v].height ; l++) {
+                for (int l = 0 ; i+l < n && l < vehicles[v].height ; l++) {
                   s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l][j][t][v_]));
                 }
               }
