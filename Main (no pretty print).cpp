@@ -73,24 +73,14 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
 
     // Initialisation du parking
 
-    int startBoard[n][n];
-    for (int i  = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
-        startBoard[i][j]=-1;
-        }
-      }
-
     for (int v = 0 ; v < vehicles_number ; v++) {
-      startBoard[vehicles[v].y][vehicles[v].x] = v;
+      s.addUnit(Lit(Vehicles[vehicles[v].y][vehicles[v].x][0][v]));
     }
 
-    for (int i = 0 ; i < n ; i++) {
-      for (int j = 0 ; j < n ; j++) {
-        for (int v = 0 ; v < vehicles_number ; v++) {
-          if (startBoard[i][j] == v) {
-            s.addUnit(Lit(Vehicles[i][j][0][v]));
-          }
-          else {
+    for (int v = 0 ; v < vehicles_number ; v++) {
+      for (int i = 0 ; i < n ; i++) {
+        for (int j = 0 ; j < n ; j++) {
+          if (i != vehicles[v].y && j != vehicles[v].x) {
             s.addUnit(~Lit(Vehicles[i][j][0][v]));
           }
         }
