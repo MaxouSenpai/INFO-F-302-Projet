@@ -47,10 +47,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     int actions_number = 2;
     int Vehicles[n][n][time_bound+1][vehicles_number];
     int Moves[vehicles_number][time_bound][actions_number];
-
     vec<Lit> lits;
 
+
     // ajout des propositions
+
     for (int i = 0 ; i < n ; i++) {
       for (int j = 0 ; j < n ; j++) {
         for (int t = 0 ; t < time_bound+1 ; t++) {
@@ -71,6 +72,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
 
 
     // Initialisation du parking
+
     int startBoard[n][n];
     for (int i  = 0 ; i < n ; i++) {
       for (int j = 0 ; j < n ; j++) {
@@ -95,7 +97,9 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // À chaque instant, on ne peut avoir qu’au maximum un mouvement
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int a = 0 ; a < actions_number ; a++) {
@@ -110,7 +114,9 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // À chaque instant, il faut y avoir un mouvement
+
     for (int t = 0 ; t < time_bound ; t++) {
       lits.clear();
       for (int v = 0 ; v < vehicles_number ; v++) {
@@ -119,42 +125,6 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
         }
       }
       s.addClause(lits);
-    }
-
-
-    // Au maximum une voiture à une position
-    //  Voitures Horizontales
-    for (int t = 0 ; t < time_bound+1 ; t++) {
-      for (int v = 0 ; v < vehicles_number ; v++) {
-        for (int i = 0 ; i < n ; i++) {
-          for (int j = 0 ; j < n ; j++) {
-            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-              if (vehicles[v].orientation == Horizontal) {
-                for (int l = 0 ; j+l < n && l < vehicles[v].width ; l++) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i][j+l][t][v_]));
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    //  Voitures Verticales
-    for (int t = 0 ; t < time_bound+1 ; t++) {
-      for (int v = 0 ; v < vehicles_number ; v++) {
-        for (int i = 0 ; i < n ; i++) {
-          for (int j = 0 ; j < n ; j++) {
-            for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
-              if (vehicles[v].orientation == Vertical) {
-                for (int l = 0 ; i+l < n && l < vehicles[v].height ; l++) {
-                  s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l][j][t][v_]));
-                }
-              }
-            }
-          }
-        }
-      }
     }
 
 
@@ -171,6 +141,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
         s.addClause(lits);
       }
     }
+
 
     // Il n’y a pas plusieurs fois la même voiture
 
@@ -190,9 +161,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Pas de collision entre les voitures et les murs du parking
     
     //  Voitures Horizontales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Horizontal) {
@@ -206,6 +179,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Vertical) {
@@ -218,8 +192,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Pas de collision entre les voitures
+
     //  Voitures Horizontales — Voitures Horizontales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
@@ -237,15 +214,16 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Horizontales — Voitures Verticales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
           for (int j = 0 ; j < n ; j++) {
             for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
               if (vehicles[v].orientation == Horizontal && vehicles[v_].orientation == Vertical) {
-                for (int l = 1 ; i-l >= 0 && l < vehicles[v_].height ; l++) {
-                  for (int l_ = 0 ; j+l_ < n && l_ < vehicles[v].width ; l_++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l][j+l_][t][v_]));
+                for (int l = 0 ; j+l < n && l < vehicles[v].width ; l++) {
+                  for (int l_ = 0 ; i-l_ >= 0 && l_ < vehicles[v_].height ; l_++) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i-l_][j+l][t][v_]));
                   }
                 }
               }
@@ -256,15 +234,16 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales — Voitures Horizontales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
           for (int j = 0 ; j < n ; j++) {
             for (int v_ = v+1 ; v_ < vehicles_number ; v_++) {
               if (vehicles[v].orientation == Vertical && vehicles[v_].orientation == Horizontal) {
-                for (int l = 1 ; j-l >= 0 && l < vehicles[v_].width ; l++) {
-                  for (int l_ = 0 ; i+l_ < n && l_ < vehicles[v].height ; l_++) {
-                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l_][j-l][t][v_]));
+                for (int l = 0 ; i+l < n && l < vehicles[v].height ; l++) {
+                  for (int l_ = 0 ; j-l_ >= 0 && l_ < vehicles[v_].width ; l_++) {
+                    s.addBinary(~Lit(Vehicles[i][j][t][v]),~Lit(Vehicles[i+l][j-l_][t][v_]));
                   }
                 }
               }
@@ -275,6 +254,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales — Voitures Verticales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
@@ -291,8 +271,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Pas de collision entre les voitures et les blocs fixes du parking
+
     //  Voitures Horizontales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int w = 0 ; w < walls_number ; w++) {
         for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
@@ -310,6 +293,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int w = 0 ; w < walls_number ; w++) {
         for (int i = 0 ; i < fixed[w].height && fixed[w].y+i < n ; i++) {
@@ -326,8 +310,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Les voitures ne doivent pas être en dehors de leur axe
+
     //  Voitures Horizontales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
@@ -341,6 +328,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales
+
     for (int t = 0 ; t < time_bound+1 ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int i = 0 ; i < n ; i++) {
@@ -353,8 +341,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Vérifier que les actions /avancer/ ont été faites
+
     //  Voitures Horizontales
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Horizontal) {
@@ -370,6 +361,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Vertical) {
@@ -384,8 +376,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Vérifier que les actions /reculer/ ont été faites
+
     //  Voitures Horizontales
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Horizontal) {
@@ -401,6 +396,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Vertical) {
@@ -415,8 +411,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // Interdire les actions /reculer/ qui font sortir les voitures du parking
+    
     //  Voitures Horizontales
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Horizontal) {
@@ -426,6 +425,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
     }
 
     //  Voitures Verticales
+
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         if (vehicles[v].orientation == Vertical) {
@@ -436,6 +436,7 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
 
 
     // Vérifier que les voitures non-affectées par l’action effectuée ne changent pas
+    
     for (int t = 0 ; t < time_bound ; t++) {
       for (int v = 0 ; v < vehicles_number ; v++) {
         for (int a = 0 ; a < actions_number ; a++) {
@@ -464,8 +465,11 @@ void solve(int n, vector<Block> &vehicles, vector<Block> fixed, int k) {
       }
     }
 
+
     // La voiture rouge doit se trouver à côté de la sortie du parking à la fin de la limite de temps
+    
     s.addUnit(Lit(Vehicles[vehicles[0].y][n-2][time_bound][0]));
+
 
     bool can_continue = true;
     while (solutions_found < k && can_continue) {
